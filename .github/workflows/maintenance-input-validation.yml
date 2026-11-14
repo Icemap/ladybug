@@ -10,6 +10,24 @@ permissions:
   contents: read
 
 jobs:
+  json-string-rust-api:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install the Rust API toolchain
+        run: rustup toolchain install 1.98.1 --profile minimal --component clippy,rustfmt
+      - name: Check scalar fixture formatting
+        run: rustfmt +1.98.1 --edition 2021 --check tools/rust_api/tests/json_get_string.rs
+      - name: Strict scalar fixture lint
+        run: >-
+          cargo +1.98.1 clippy --manifest-path tools/rust_api/Cargo.toml
+          --locked --no-default-features --test json_get_string -j 2 -- -D warnings
+      - name: Execute statically linked JSON scalar queries
+        run: >-
+          cargo +1.98.1 test --manifest-path tools/rust_api/Cargo.toml
+          --locked --no-default-features --test json_get_string -j 2 -- --test-threads=1
+
   native-release:
     strategy:
       fail-fast: false
