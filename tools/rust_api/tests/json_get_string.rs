@@ -38,6 +38,10 @@ fn decoded_top_level_string_uses_last_exact_key_without_numeric_conversion() {
         (r#"{"key": "value"}"#, Some("value")),
         (r#"{"key":"\u0076alue"}"#, Some("value")),
         (r#"{"key":"left\u0000right"}"#, Some("left\0right")),
+        (
+            r#"{"key":"long string before\u0000and after the embedded separator"}"#,
+            Some("long string before\0and after the embedded separator"),
+        ),
         (r#"{"key":""}"#, Some("")),
         (r#"{"nested":{"key":"value"}}"#, None),
         (r#"{"KEY":"value"}"#, None),
