@@ -176,9 +176,11 @@ fn nullable_document_and_key_vectors_share_the_selected_row_positions() {
     let connection = Connection::new(&database).unwrap();
     let mut statement = connection
         .prepare(
-            "UNWIND [0,1,2,3] AS i \
-         WITH i, CASE WHEN i=2 THEN NULL ELSE CAST($document AS STRING) END AS document, \
-              CASE WHEN i=1 THEN NULL WHEN i=3 THEN 'right' ELSE 'left' END AS key \
+            "UNWIND [0,1,2,3,4] AS i \
+         WITH i, CASE WHEN i=3 THEN NULL ELSE CAST($document AS STRING) END AS document, \
+              CASE WHEN i=2 THEN NULL WHEN i=1 THEN 'sentinel' \
+                   WHEN i=4 THEN 'right' ELSE 'left' END AS key \
+         WHERE i<>1 \
          RETURN i AS row_index, json_get_string(document,key) AS selected ORDER BY row_index",
         )
         .unwrap();
@@ -196,9 +198,9 @@ fn nullable_document_and_key_vectors_share_the_selected_row_positions() {
         output,
         vec![
             vec![Value::Int64(0), Value::String("L".into())],
-            vec![Value::Int64(1), Value::Null(LogicalType::String)],
             vec![Value::Int64(2), Value::Null(LogicalType::String)],
-            vec![Value::Int64(3), Value::String("R".into())],
+            vec![Value::Int64(3), Value::Null(LogicalType::String)],
+            vec![Value::Int64(4), Value::String("R".into())],
         ]
     );
 }
