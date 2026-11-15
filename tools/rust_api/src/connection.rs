@@ -76,7 +76,10 @@ pub struct Connection<'a> {
     // Turning this into a function just causes lifetime issues.
     conn: UnsafeCell<UniquePtr<ffi::Connection<'a>>>,
     database: &'a Database,
+    id: u64,
 }
+
+static NEXT_CONNECTION_ID: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
 
 // Connections are synchronized on the C++ side and should be safe to move and access across
 // threads
@@ -93,6 +96,7 @@ impl<'a> Connection<'a> {
         Ok(Connection {
             conn: UnsafeCell::new(ffi::database_connect(db)?),
             database,
+            id: NEXT_CONNECTION_ID.fetch_add(1, std::sync::atomic::Ordering::Relaxed),
         })
     }
 
@@ -214,6 +218,13 @@ impl<'a> Connection<'a> {
                 &result,
             )))
         }
+    }
+
+    /// Process-unique identity of this connection. Unlike its address, it is
+    /// never reused after the connection is dropped, so an observer can key
+    /// per-connection state (for example an open transaction) by it.
+    pub fn id(&self) -> u64 {
+        self.id
     }
 
     fn observer(&self) -> Option<std::sync::Arc<dyn crate::StatementObserver>> {
